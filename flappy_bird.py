@@ -5,7 +5,7 @@ import os
 import random
 
 # constants
-WIN_WIDTH = 600
+WIN_WIDTH = 500
 WIN_HEIGHT = 800
 
 # load images
@@ -111,6 +111,7 @@ def main():
     win = pygame.display.set_mode((WIN_WIDTH, WIN_HEIGHT))
     clock = pygame.time.Clock()
     # run = false to end the game
+    clock = pygame.time.Clock()
     run = True
     while run:
         clock.tick(30)
@@ -121,3 +122,7 @@ def main():
         draw_window(win, bird)
     pygame.quit()
     quit()
+
+
+if __name__ == "__main__":
+    main()
