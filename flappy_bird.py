@@ -144,15 +144,15 @@ class Base:
         win.blit(self.IMG, (self.x2, self.y))
 
 
-def draw_window(win, bird, pipes, base, score):
+def draw_window(win, birds, pipes, base, score):
     win.blit(BG_IMG, (0, 0))
     for pipe in pipes:
         pipe.draw(win)
     text = STAT_FONT.render("Score: " + str(score), 1, (255, 255, 255))
     win.blit(text, (WIN_WIDTH - 10 - text.get_width(), 10))
     base.draw(win)
-
-    bird.draw(win)
+    for bird in birds:
+        bird.draw(win)
     pygame.display.update()
 
 
@@ -214,8 +214,18 @@ class Pipe:
         win.blit(self.PIPE_BOTTOM, (self.x, self.bottom))
 
 
-def main():
-    bird = Bird(230, 350)
+def main(genomes, config):
+    nets = []
+    ge = []
+    birds = []
+    # genome is a tuple
+    for _, g in genomes:
+        net = neat.nn.FeedForwardNetwork.create(g, config)
+        nets.append(net)
+        birds.append(Bird(230, 350))
+        g.fitness = 0
+        ge.append(g)
+
     base = Base(730)
     win = pygame.display.set_mode((WIN_WIDTH, WIN_HEIGHT))
     clock = pygame.time.Clock()
@@ -229,34 +239,67 @@ def main():
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 run = False
+                pygame.quit()
+                quit()
         # bird.move()
+        pipe_ind = 0
+        if len(birds) > 0:
+            # if there is a bird then we will check the position of the pipe
+            if (
+                len(pipes) > 1
+                and birds[0].x > pipes[0].x + pipes[0].PIPE_TOP.get_width()
+            ):
+                # check the next pipe
+                pipe_ind = 1
+        else:
+            run = False
+            break
+        for x, bird in enumerate(birds):
+            # give the bird a 1 fitness point every second it stays alive
+            bird.move()
+            # every sec bir stay alive it will get 0.1 fitness
+            ge[x].fitness += 0.1
+            # give the network the bird position, top pipe position, bottom pipe position
+            # normalize the inputs
+            output = nets[x].activate(
+                (
+                    bird.y,
+                    abs(bird.y - pipes[pipe_ind].height),
+                    abs(bird.y - pipes[pipe_ind].bottom),
+                )
+            )
+            # if the output is greater than 0.5 then jump
+            if output[0] > 0.5:
+                bird.jump()
         add_pipe = False
         rem = []
         for pipe in pipes:
-            # if collision with pipe and bird end the game
-            if pipe.collide(bird, win):
-                pass
+            for x, bird in enumerate(birds):
+                # if collision with pipe and bird end the game
+                if pipe.collide(bird, win):
+                    # if bird hit the pipe then we will reduce the fitness
+                    ge[x].fitness -= 1
+                    birds.pop(x)
+                    nets.pop(x)
+                    ge.pop(x)
+                # when bird passes then it sets to true an generate new one
+                if not pipe.passed and pipe.x < bird.x:
+                    pipe.passed = True
+                    add_pipe = True
             if pipe.x + pipe.PIPE_TOP.get_width() < 0:
                 rem.append(pipe)
-            # when bird passes then it sets to true an generate new one
-            if not pipe.passed and pipe.x < bird.x:
-                pipe.passed = True
-                add_pipe = True
+
             pipe.move()
         if add_pipe:
             score += 1
             pipes.append(Pipe(600))
         for r in rem:
             pipes.remove(r)
-        if bird.y + bird.img.get_height() >= 730:
-            pass
+        for bird in birds:
+            if bird.y + bird.img.get_height() >= 730 or bird.y < 0:
+                pass
         base.move()
-        draw_window(win, bird, pipes, base, score)
-    pygame.quit()
-    quit()
-
-
-main()
+        draw_window(win, birds, pipes, base, score)
 
 
 def run(config_path):
@@ -269,7 +312,12 @@ def run(config_path):
     )
     # create population based on the config file
     p = neat.Population(config)
+    # giving output to the terminal
     p.add_reporter(neat.StdOutReporter(True))
+    stats = neat.StatisticsReporter()
+    p.add_reporter(stats)
+    # call the main function 50 times and pass it all the genome as well as the config file
+    winner = p.run(main, 50)
 
 
 if __name__ == "__main__":
