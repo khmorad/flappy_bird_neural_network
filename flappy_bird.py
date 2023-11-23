@@ -106,6 +106,64 @@ def draw_window(win, bird):
     pygame.display.update()
 
 
+# make pipes backwards so it looks like its moving
+class Pipe:
+    GAP = 200
+    VEL = 5
+
+    def __init__(self, x):
+        self.x = x
+        # how tall the pipe is
+        self.height = 0
+        self.top = 0
+        self.bottom = 0
+        # where the top and bottom of the pipe is drawn
+        self.PIPE_TOP = pygame.transform.flip(PIPE_IMG, False, True)
+        self.PIPE_BOTTOM = PIPE_IMG
+        # if the bird has already passed the pipe
+        # use for the ai
+        self.passed = False
+        # define where is the top and bottom of the pipe
+        self.set_height()
+
+    def set_height(self):
+        # where the top of the pipe is
+        self.height = random.randrange(50, 450)
+        # where the bottom of the pipe is
+        self.top = self.height - self.PIPE_TOP.get_height()
+        # where the top of the bottom pipe is
+        self.bottom = self.height + self.GAP
+
+    # now we are going to use mask collision
+    def collide(self, bird, win):
+        # get the mask of the bird
+        bird_mask = bird.get_mask()
+        # get the mask of the top and bottom pipe
+        top_mask = pygame.mask.from_surface(self.PIPE_TOP)
+        bottom_mask = pygame.mask.from_surface(self.PIPE_BOTTOM)
+        # how far away the masks are from each other
+        top_offset = (self.x - bird.x, self.top - round(bird.y))
+        bottom_offset = (self.x - bird.x, self.bottom - round(bird.y))
+
+        # point of collision if they dont collide
+        # it will return none **important**
+        b_point = bird_mask.overlap(bottom_mask, bottom_offset)
+        t_point = bird_mask.overlap(top_mask, top_offset)
+        # if there is a collision return true
+        if b_point or t_point:
+            return True
+        return False
+
+    def move(self):
+        self.x -= self.VEL
+
+    def draw(self, win):
+        # draw the top pipe
+        win.blit(self.PIPE_TOP, (self.x, self.top))
+        # draw the bottom pipe
+        win.blit(self.PIPE_BOTTOM, (self.x, self.bottom))
+
+
 def main():
     bird = Bird(200, 200)
     win = pygame.display.set_mode((WIN_WIDTH, WIN_HEIGHT))
