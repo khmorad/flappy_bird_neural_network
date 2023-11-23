@@ -4,6 +4,19 @@ import time
 import os
 import random
 
+# NEAT randomly add node and connection to the network to make it better
+# favoring smaller architectures if they are able to solve the problem
+# start from simple network and make it more complex as needed
+
+
+# start by giving position of the bird
+###### distance between bird and top pipe and bottom pipe
+# input: bird y position, top pipe position, bottom pipe position
+# output: jump or not jump in this case
+# activation function: tanh <--- hyperbolic tangent function (if its greater than 0.5 jump)
+# population size: 100 birds (Gen 0 - 100)
+# fitness function: **important** how far the bird gets
+# Max generations: 30 if it didnt work after 30 generations then we will stop
 pygame.font.init()
 # constants
 WIN_WIDTH = 500
