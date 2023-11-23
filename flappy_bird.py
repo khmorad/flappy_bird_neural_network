@@ -256,5 +256,23 @@ def main():
     quit()
 
 
+main()
+
+
+def run(config_path):
+    config = neat.config.Config(
+        neat.DefaultGenome,
+        neat.DefaultReproduction,
+        neat.DefaultSpeciesSet,
+        neat.DefaultStagnation,
+        config_path,
+    )
+    # create population based on the config file
+    p = neat.Population(config)
+    p.add_reporter(neat.StdOutReporter(True))
+
+
 if __name__ == "__main__":
-    main()
+    local_dir = os.path.dirname(__file__)
+    config_path = os.path.join(local_dir, "config-feedforward.txt")
+    run(config_path)
